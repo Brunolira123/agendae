@@ -1,4 +1,3 @@
-import 'package:agendae/pages/agenda_mock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'agenda_page.dart';
@@ -11,6 +10,11 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final proximoCliente = {"nome": "Bruno", "hora": "10:30"};
     final agendamentosHoje = 6;
+    final proximos = [
+      {"nome": "Ana", "hora": "11:00"},
+      {"nome": "Carlos", "hora": "12:30"},
+      {"nome": "Maria", "hora": "14:00"},
+    ];
     final dataAtual = DateFormat(
       "EEEE, dd MMM",
       "pt_BR",
@@ -21,9 +25,9 @@ class DashboardPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         elevation: 0,
-        title: Text(
+        title: const Text(
           "Bem-vindo!",
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           Padding(
@@ -35,7 +39,7 @@ class DashboardPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Column(
+      body: ListView(
         children: [
           Container(
             width: double.infinity,
@@ -73,18 +77,58 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
+
+          // Próximos agendamentos
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "Próximos Agendamentos",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...proximos.map((ag) => _buildListItem(ag["nome"]!, ag["hora"]!)),
+
+          const SizedBox(height: 16),
+
+          // Resumo visual do dia
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Card(
-              margin: const EdgeInsets.all(16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: AgendaMock(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Resumo do Dia",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(
+                      value: agendamentosHoje / 10, // meta do dia
+                      color: Colors.blue,
+                      backgroundColor: Colors.grey[300],
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "$agendamentosHoje de 10 agendamentos concluídos",
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+
+          const SizedBox(height: 20),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(context),
@@ -127,6 +171,17 @@ class DashboardPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(String nome, String hora) {
+    return ListTile(
+      leading: Icon(Icons.person, color: Colors.blue),
+      title: Text(nome),
+      trailing: Text(
+        hora,
+        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
       ),
     );
   }
