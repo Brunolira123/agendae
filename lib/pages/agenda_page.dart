@@ -23,12 +23,21 @@ class AgendaScreen extends StatefulWidget {
 class _AgendaScreenState extends State<AgendaScreen> {
   DateTime selectedDate = DateTime.now();
 
+  // lista mockada de serviços
+  final List<Map<String, dynamic>> servicos = [
+    {"nome": "Corte de Cabelo", "duracao": Duration(minutes: 40)},
+    {"nome": "Escova", "duracao": Duration(minutes: 60)},
+    {"nome": "Maquiagem", "duracao": Duration(minutes: 90)},
+  ];
+
   List<Map<String, dynamic>> eventos = [
     {
-      "inicio": TimeOfDay(hour: 5, minute: 30),
-      "fim": TimeOfDay(hour: 7, minute: 30),
-      "titulo": "Camily",
-      "descricao": "Escova e babyliss pré Wedding",
+      "inicio": TimeOfDay(hour: 9, minute: 0),
+      "fim": TimeOfDay(hour: 10, minute: 0),
+      "cliente": "Camily",
+      "telefone": "11999999999",
+      "servico": "Escova",
+      "observacao": "Pré Wedding",
       "cor": Colors.green,
     },
   ];
@@ -158,19 +167,27 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                   ),
                                 ),
                                 Text(
-                                  evento["titulo"],
+                                  "${evento["cliente"]} (${evento["telefone"]})",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
-                                  evento["descricao"],
+                                  "${evento["servico"]}",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
                                   ),
                                 ),
+                                if ((evento["observacao"] ?? "").isNotEmpty)
+                                  Text(
+                                    evento["observacao"],
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                               ],
                             ),
                           )
@@ -188,7 +205,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
         ),
         child: FloatingActionButton(
           backgroundColor: Colors.blue,
-          onPressed: () {},
+          onPressed: () {
+            _abrirFormAgendamento(context);
+          },
           child: Icon(Icons.add, color: Colors.white),
         ),
       ),
@@ -210,6 +229,106 @@ class _AgendaScreenState extends State<AgendaScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.add), label: "Criar"),
         ],
       ),
+    );
+  }
+
+  void _abrirFormAgendamento(BuildContext context) {
+    final _formKey = GlobalKey<FormState>();
+    String? nomeCliente;
+    String? telefone;
+    String? observacao;
+    Map<String, dynamic>? servicoSelecionado;
+    TimeOfDay? horaInicio;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Novo Agendamento"),
+          content: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextFormField(
+                    decoration: InputDecoration(labelText: "Nome do Cliente"),
+                    onSaved: (value) => nomeCliente = value,
+                    validator: (value) =>
+                        value!.isEmpty ? "Digite o nome" : null,
+                  ),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: "Telefone"),
+                    keyboardType: TextInputType.phone,
+                    onSaved: (value) => telefone = value,
+                  ),
+                  DropdownButtonFormField<Map<String, dynamic>>(
+                    decoration: InputDecoration(labelText: "Serviço"),
+                    items: servicos.map((s) {
+                      return DropdownMenuItem(value: s, child: Text(s["nome"]));
+                    }).toList(),
+                    onChanged: (value) => servicoSelecionado = value,
+                    validator: (value) =>
+                        value == null ? "Selecione um serviço" : null,
+                  ),
+                  TextFormField(
+                    readOnly: true,
+                    decoration: InputDecoration(labelText: "Hora de Início"),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (picked != null) {
+                        horaInicio = picked;
+                      }
+                    },
+                    validator: (_) =>
+                        horaInicio == null ? "Selecione uma hora" : null,
+                  ),
+                  TextFormField(
+                    decoration: InputDecoration(labelText: "Observação"),
+                    onSaved: (value) => observacao = value,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text("Cancelar"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: Text("Salvar"),
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+
+                  final duracao = servicoSelecionado!["duracao"] as Duration;
+                  final horaFim = TimeOfDay(
+                    hour: (horaInicio!.hour + duracao.inHours) % 24,
+                    minute: (horaInicio!.minute + duracao.inMinutes % 60) % 60,
+                  );
+
+                  setState(() {
+                    eventos.add({
+                      "inicio": horaInicio!,
+                      "fim": horaFim,
+                      "cliente": nomeCliente!,
+                      "telefone": telefone ?? "",
+                      "servico": servicoSelecionado!["nome"],
+                      "observacao": observacao ?? "",
+                      "cor": Colors.blue,
+                    });
+                  });
+
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
